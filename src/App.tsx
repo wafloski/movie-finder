@@ -22,6 +22,8 @@ interface Movie {
   Title: string;
   Year: string;
   Type: string;
+  Poster: string;
+  imdbRating: string;
   Country?: string;
 }
 
@@ -38,10 +40,15 @@ const App = () => {
     setLoading(true);
     setError(null);
     try {
+      if (!searchTerm) {
+        setLoading(false);
+        return setError('Search term is required');
+      }
       const response = await fetch(
         `https://www.omdbapi.com/?s=${searchTerm}&type=${type}&apikey=${API_KEY}`
       );
       const data = await response.json();
+      console.log(data);
       if (data.Response === 'True') {
         setMovies(data.Search);
       } else {
@@ -117,6 +124,7 @@ const App = () => {
                 <Th>Year</Th>
                 <Th>Country</Th>
                 <Th>Type</Th>
+                <Th>Poster</Th>
               </Tr>
             </Thead>
             <Tbody>
@@ -126,6 +134,17 @@ const App = () => {
                   <Td>{movie.Year}</Td>
                   <Td>{movie.Country || 'Unknown'}</Td>
                   <Td>{movie.Type}</Td>
+                  <Td>
+                    <img
+                      src={movie.Poster}
+                      alt={movie.Title}
+                      style={{
+                        height: '180px',
+                        width: '120px',
+                        objectFit: 'cover',
+                      }}
+                    />
+                  </Td>
                 </Tr>
               ))}
             </Tbody>
