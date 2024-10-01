@@ -1,20 +1,20 @@
 import React, { useState } from 'react';
 import {
-  ChakraProvider,
   Box,
+  Button,
+  ChakraProvider,
+  Container,
   Heading,
   Input,
   Select,
-  Button,
-  Table,
-  Thead,
-  Tbody,
-  Tr,
-  Th,
-  Td,
   Spinner,
+  Table,
+  Tbody,
+  Td,
   Text,
-  Container,
+  Th,
+  Thead,
+  Tr,
 } from '@chakra-ui/react';
 
 interface Movie {
@@ -31,42 +31,68 @@ const App = () => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [type, setType] = useState<string>('movie');
   const [movies, setMovies] = useState<Movie[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
+  const [isLoading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const API_KEY = import.meta.env.VITE_API_KEY;
 
   const fetchMovies = async () => {
+    const response = await fetch(
+      `https://www.omdbapi.com/?s=${searchTerm}&type=${type}&apikey=${API_KEY}`
+    );
+    const data = await response.json();
+
+    if (data.Response === 'True') {
+      return (data.Search);
+    } else {
+      setError(data.Error);
+      return ([]);
+    }
+  };
+
+  const getMovieDetails = async (imdbID: string) => {
+    const response = await fetch(`https://www.omdbapi.com/?i=${imdbID}&apikey=${API_KEY}`);
+    return await response.json();
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setMovies([]);
     setLoading(true);
     setError(null);
     try {
-      if (!searchTerm) {
-        setLoading(false);
-        return setError('Search term is required');
-      }
-      const response = await fetch(
-        `https://www.omdbapi.com/?s=${searchTerm}&type=${type}&apikey=${API_KEY}`
-      );
-      const data = await response.json();
-      console.log(data);
-      if (data.Response === 'True') {
-        setMovies(data.Search);
+      const results = await fetchMovies();
+
+      if (!results) {
+        setError('No results found.')
       } else {
-        setError(data.Error);
-        setMovies([]);
+        const detailedMovies: Movie[] = await Promise.all(
+          results.map(async (movie: { imdbID: string; }) => {
+            const details = await getMovieDetails(movie.imdbID);
+            return {
+              Title: details.Title,
+              Year: details.Year,
+              Country: details.Country,
+              Type: details.Type,
+              Poster: details.Poster,
+            };
+          })
+        )
+        setMovies(detailedMovies);
       }
-    } catch (err) {
-      console.log(err);
+    } catch (error) {
+      console.log(error);
       setError('Fetch data error.');
       setMovies([]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    fetchMovies();
-  };
+  const clearData = () => {
+    setSearchTerm('');
+    setMovies([]);
+  }
 
   return (
     <ChakraProvider>
@@ -98,12 +124,15 @@ const App = () => {
             <option value="series">Series</option>
             <option value="episode">Episode</option>
           </Select>
-          <Button colorScheme="blue" type="submit">
+          <Button colorScheme="blue" type="submit" isDisabled={isLoading || searchTerm.trim() === ''}>
             Search
+          </Button>
+          <Button colorScheme="orange" isDisabled={isLoading || !movies.length} onClick={clearData}>
+            Reset
           </Button>
         </Box>
 
-        {loading && (
+        {isLoading && (
           <Box textAlign="center" mb={6}>
             <Spinner size="xl" mt={20} />
           </Box>
@@ -132,7 +161,7 @@ const App = () => {
                 <Tr key={movie.imdbID}>
                   <Td>{movie.Title}</Td>
                   <Td>{movie.Year}</Td>
-                  <Td>{movie.Country || 'Unknown'}</Td>
+                  <Td>{movie.Country}</Td>
                   <Td>{movie.Type}</Td>
                   <Td>
                     <img
