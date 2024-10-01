@@ -74,6 +74,7 @@ const App = () => {
               Year: details.Year,
               Country: details.Country,
               Type: details.Type,
+              imdbRating: details.imdbRating,
               Poster: details.Poster,
             };
           })
@@ -87,6 +88,23 @@ const App = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getStars = (rating: number) => {
+    const fullStars = Math.floor(rating);
+    const emptyStars = 10 - fullStars;
+
+    const stars = [];
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(<span key={i}>⭐️</span>);
+    }
+
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(<span key={`empty-${i}`}>☆</span>);
+    }
+
+    return stars;
   };
 
   const clearData = () => {
@@ -153,6 +171,7 @@ const App = () => {
                 <Th>Year</Th>
                 <Th>Country</Th>
                 <Th>Type</Th>
+                <Th>IMDB Rating</Th>
                 <Th>Poster</Th>
               </Tr>
             </Thead>
@@ -163,6 +182,7 @@ const App = () => {
                   <Td>{movie.Year}</Td>
                   <Td>{movie.Country}</Td>
                   <Td>{movie.Type}</Td>
+                  <Td>{getStars(Number(movie.imdbRating))} ({movie.imdbRating}/10)</Td>
                   <Td>
                     <img
                       src={movie.Poster}
